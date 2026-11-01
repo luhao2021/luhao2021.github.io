@@ -1,0 +1,38 @@
+name: Publish generated website
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/configure-pages@v5
+      - name: Stage generated website only
+        run: |
+          mkdir -p /tmp/pages-site
+          cp index.html styles.css site.js favicon.svg .nojekyll /tmp/pages-site/
+          cp -R assets documents /tmp/pages-site/
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: /tmp/pages-site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
